@@ -1,23 +1,19 @@
-#Depending on the operating system of the host machines(s) that will build or run the containers, the image specified in the FROM statement may need to be changed.
-#For more information, please see https://aka.ms/containercompat
-
-FROM mcr.microsoft.com/dotnet/core/aspnet:2.2-nanoserver-1803 AS base
+FROM mcr.microsoft.com/dotnet/core/aspnet:2.2-stretch-slim AS base
 WORKDIR /app
 EXPOSE 80
-EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/core/sdk:2.2-nanoserver-1803 AS build
+FROM mcr.microsoft.com/dotnet/core/sdk:2.2-stretch AS build
 WORKDIR /src
-COPY ["RabbitMQReiverCoreAPI/RabbitMQReiverCoreAPI.csproj", "RabbitMQReiverCoreAPI/"]
-RUN dotnet restore "RabbitMQReiverCoreAPI/RabbitMQReiverCoreAPI.csproj"
+COPY ["RabbitMQListener/RabbitMQListener.csproj", "RabbitMQListener/"]
+RUN dotnet restore "RabbitMQListener/RabbitMQListener.csproj"
 COPY . .
-WORKDIR "/src/POC_LOS.Authentication"
-RUN dotnet build "RabbitMQReiverCoreAPI.csproj" -c Release -o /app/build
+WORKDIR "/src/RabbitMQListener"
+RUN dotnet build "RabbitMQListener.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "RabbitMQReiverCoreAPI.csproj" -c Release -o /app/publish
+RUN dotnet publish "RabbitMQListener.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "RabbitMQReiverCoreAPI.dll"]
+ENTRYPOINT ["dotnet", "RabbitMQListener.dll"]
